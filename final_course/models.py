@@ -17,6 +17,9 @@ class UserProfile(models.Model):
         ],
     )
     was_born = models.DateField(blank=True, null=True, verbose_name="Дата рождения")
+    phone_number = models.CharField(
+        max_length=20, blank=True, null=True, verbose_name="Номер телефона"
+    )
 
     class Meta:
         app_label = "final_course"
@@ -104,36 +107,92 @@ class CV(models.Model):
         verbose_name = "Резюме"
         verbose_name_plural = "Резюме"
 
-    def save(self, *args, **kwargs):
-        total_fields = 0
-        filled_fields = 0
-
-        fields_to_check = [
-            "middle_name",
-            "photo",
-            "where_to",
-            "education",
-            "job_xp",
-            "skills",
-            "languages",
-            "about_me",
-        ]
-
-        for field_name in fields_to_check:
-            if getattr(self, field_name, None) is not None:
-                filled_fields += 1
-            total_fields += 1
-
-        if total_fields > 0:
-            new_rating = (filled_fields / total_fields) * 100
-        else:
-            new_rating = 0.0
-
-        if new_rating != self.rating:
-            self.rating = new_rating
-            super(CV, self).save(*args, **kwargs)
-        else:
-            super(CV, self).save(*args, **kwargs)
-
     def __str__(self):
         return f"Резюме от {self.first_name} {self.last_name}"
+
+
+class Like(models.Model):
+    which_cv = models.ForeignKey(
+        to=CV, verbose_name="Какому резюме?", on_delete=models.CASCADE
+    )
+    clicked_by = models.ForeignKey(
+        to=User, verbose_name="Кто поставил?", on_delete=models.CASCADE
+    )
+    status = models.BooleanField(default=False)
+    date_clicked = models.DateTimeField(
+        default=timezone.now, verbose_name="Когда поставлено?"
+    )
+
+    class Meta:
+        app_label = "final_course"
+        ordering = ["-date_clicked", "clicked_by"]
+        verbose_name = "Одобрение"
+        verbose_name_plural = "Одобрении"
+
+    def __str__(self):
+        if self.status:
+            return f"{self.clicked_by} {self.which_cv} одобряет"
+        else:
+            return f"{self.clicked_by} {self.which_cv} не одобряет"
+
+
+class Application(models.Model):
+    _user = models.ForeignKey(
+        to=User, verbose_name="Подал заявку", on_delete=models.DO_NOTHING
+    )
+    diameter = models.SmallIntegerField(
+        verbose_name="Диаметр труб",
+    )
+    thickness = models.SmallIntegerField(verbose_name="Толщина труб")
+    length = models.IntegerField(verbose_name="Длина труб")
+    LIST_OF_TYPE_CHOICES = [("X", "Хлыст"), ("B", "Бухта")]
+    type_of = models.CharField(max_length=1, choices=LIST_OF_TYPE_CHOICES)
+    date_created = models.DateTimeField(default=timezone.now)
+    object_to = models.CharField(
+        max_length=30, verbose_name="Объект", null=True, blank=True
+    )
+    LIST_OF_ACCEPTED_CHOICES = [
+        ("0", "Отклонено"),
+        ("1", "Принято"),
+        ("2", "Не решено"),
+    ]
+    is_accepted = models.CharField(
+        max_length=1,
+        default=LIST_OF_ACCEPTED_CHOICES[-1][0],
+        choices=LIST_OF_ACCEPTED_CHOICES,
+    )
+
+    class Meta:
+        app_label = "final_course"
+        ordering = ("-date_created", "diameter", "thickness", "length")
+        verbose_name = "Заявка на трубу"
+        verbose_name_plural = "Заявки на трубы"
+
+    def __str__(self):
+        return f"Заявка от {self._user}, по дате {self.date_created}"
+
+
+class Group(models.Model):
+    name = models.CharField(max_length=100, verbose_name="Имя группы")
+    slug = models.SlugField(unique=True)
+    owner = models.ForeignKey(
+        User, verbose_name="Владелец", on_delete=models.DO_NOTHING, null=True
+    )
+    is_private = models.BooleanField(default=False, verbose_name="Видимость")
+    user_in_group = models.CharField(max_length=50, blank=True, null=True)
+
+    class Meta:
+        app_label = "final_course"
+        ordering = ("name", "owner")
+        verbose_name = "Группа"
+        verbose_name_plural = "Группы"
+
+
+class Message(models.Model):
+    group = models.ForeignKey(Group, related_name="messages", on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    content = models.TextField(verbose_name="Контент (текст сообщений)")
+    date_created = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        ordering = ("-date_created",)

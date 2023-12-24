@@ -1,10 +1,15 @@
+import asyncio
+
+import telegram_notification
+
 from django.core.cache import cache
+from django.db.models import Q
 from django.db.models.signals import pre_save, post_save
 from django.dispatch import receiver
 from django.contrib.auth.models import User
-from django.core.exceptions import ValidationError
-from django.contrib.auth.hashers import make_password
 from final_course import models
+from django.conf import settings
+from django.core.mail import send_mail
 
 
 @receiver(post_save, sender=User)
@@ -40,7 +45,7 @@ def rating(sender, instance, created, **kwargs):
 
         if filled_fields > 0:
             new_rating = (filled_fields / total_fields) * 100
-            print("Rating", new_rating)
+            # print("Rating", new_rating)
         else:
             new_rating = 0.0
 
@@ -49,17 +54,53 @@ def rating(sender, instance, created, **kwargs):
             instance.save()
 
 
-# @receiver(post_save, sender=models.CV)
-# def rating_plus_cahce(sender, instance, update_fields=None, **kwargs):
-#     if instance:
-#         cache_key = "all_cv"
-#         cache.delete(cache_key)
-#         print("Кэш обновлен CV")
-#
-#
-# @receiver(post_save, sender=models.Vacancy)
-# def cache_autorefresh(sender, instance, **kwargs):
-#     if instance:
-#         cache_key = "vacancy"
-#         cache.delete(cache_key)
-#         print("Кэш обновлен Vacancy")
+@receiver(post_save, sender=models.CV)
+def cache_autorefresh_cv(sender, instance, **kwargs):
+    if instance:
+        cache_key = "all_cv"
+        cache_key_boss = "all_cv_boss"
+        cache.delete(cache_key)
+        cache.delete(cache_key_boss)
+        print("Кэш удален CV")
+
+
+@receiver(post_save, sender=models.Vacancy)
+def cache_autorefresh_vacancy(sender, instance, **kwargs):
+    if instance:
+        cache_key = "vacancy"
+        cache.delete(cache_key)
+        print("Кэш удален Vacancy")
+
+
+@receiver(post_save, sender=models.Application)
+def cache_autorefresh_application_masters(sender, instance, **kwargs):
+    if instance:
+        cache.delete("application")
+        cache.delete("applications")
+        type_of = ""
+        match instance.type_of:
+            case "X":
+                type_of += "Хлыст"
+            case "B":
+                type_of += "Бухта"
+        print("Кэш удален 'Заявка'")
+        message_text = f"""
+            <b>Заявка от:</b> {instance._user.username}
+            
+            
+<b>Диаметр трубы:</b> {instance.diameter}
+
+<b>Толщина трубы:</b> {instance.thickness}
+
+<b>Длина труб:</b> {instance.length}
+
+<b>Объекту:</b> {instance.object_to}
+
+<b>Тип перевозки:</b> {type_of}
+
+
+<b>Дата заявки:</b> {instance.date_created}
+            
+        """
+
+        asyncio.run(telegram_notification.get_application(application=message_text))

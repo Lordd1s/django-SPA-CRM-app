@@ -27,7 +27,7 @@ class RequestLoggingMiddleware:
 
         # Логируем информацию о запросе
         logger.info(
-            f"\n\nMethod: {request.method}, \n"
+            f"Method: {request.method}, \n"
             f"Path: {request.path}, \n"
             f"Status Code: {response.status_code}, \n"
             f"Time taken: {end_time - start_time:.2f}s\n"

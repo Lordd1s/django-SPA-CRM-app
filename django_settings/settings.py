@@ -9,18 +9,39 @@ https://docs.djangoproject.com/en/4.2/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/4.2/ref/settings/
 """
+import os
+
+import environ
+
 from datetime import timedelta
 from pathlib import Path
+
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 
+env = environ.Env(
+    SECRET_KEY=(str, None),
+    SQL_ENGINE=(str, None),
+    SQL_USER=(str, None),
+    SQL_PASSWORD=(str, None),
+    SQL_PORT=(str, None),
+    SESSION_BACKEND=(str, None),
+    SESSION_ENGINE=(str, None),
+    SESSION_CACHE_ALIAS=(str, None),
+    SESSION_LOCATION=(str, None),
+    CELERY_BROKER_URL=(str, None),
+    EMAIL_HOST_USER=(str, None),
+    EMAIL_HOST_PASSWORD=(str, None),
+)
+
+environ.Env.read_env(os.path.join(BASE_DIR, ".env"))
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = "django-insecure-_^d(j%55)z3+y^cf)&^i)r6ibwfz1-8bn%z5u07ey$w%v4o9#%"
+SECRET_KEY = env("SECRET_KEY")
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -31,6 +52,8 @@ ALLOWED_HOSTS = ["*"]
 # Application definition
 
 INSTALLED_APPS = [
+    "daphne",
+    "channels",
     "grappelli",
     "django.contrib.admin",
     "django.contrib.auth",
@@ -38,6 +61,7 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "drf_yasg",
     "final_course",
     "rest_framework",
     "rest_framework_simplejwt",
@@ -66,6 +90,7 @@ CORS_ALLOW_METHODS = (
     "GET",
     "POST",
     "PUT",
+    "PATCH",
     "OPTIONS",
 )
 
@@ -90,24 +115,59 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = "django_settings.wsgi.application"
+ASGI_APPLICATION = "django_settings.asgi.application"
+
+CHANNEL_LAYERS = {"default": {"BACKEND": "channels.layers.InMemoryChannelLayer"}}
 
 
-# Database
-# https://docs.djangoproject.com/en/4.2/ref/settings/#databases
+STATIC_URL = "static/"
+MEDIA_URL = "media/"
+MEDIA_ROOT = "static/media"
 
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
+if DEBUG:
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": BASE_DIR / "db.sqlite3",
+        }
     }
-}
 
-CACHES = {
-    "default": {
-        "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
-        "LOCATION": BASE_DIR / "customcache",
+    CACHES = {
+        "default": {
+            "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+            "LOCATION": "",
+        }
     }
-}
+
+    STATICFILES_DIRS = [Path(BASE_DIR / "static"), Path(BASE_DIR / "dist")]
+else:
+    DATABASES = {
+        "default": {
+            "ENGINE": env("SQL_ENGINE"),
+            "NAME": "aliya-service",
+            "USER": env("SQL_USER"),
+            "PASSWORD": env("SQL_PASSWORD"),
+            "HOST": "localhost",
+            "PORT": env("SQL_PORT"),
+        }
+    }
+
+    # CACHES = {
+    #     "default": {
+    #         "BACKEND": env("SESSION_BACKEND"),
+    #         "LOCATION": env("SESSION_LOCATION"),
+    #         "OPTIONS": {
+    #             "CLIENT_CLASS": "django_redis.client.DefaultClient",
+    #         },
+    #     }
+    # }
+
+    # # Настройки сессий
+    # SESSION_ENGINE = env("SESSION_ENGINE")
+    # SESSION_CACHE_ALIAS = env("SESSION_CACHE_ALIAS")
+
+    STATIC_ROOT = Path(BASE_DIR / "static")
+    STATICFILES_DIRS = [Path(BASE_DIR / "dist")]
 
 LOGGING = {
     "version": 1,
@@ -163,11 +223,6 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/4.2/howto/static-files/
 
-STATIC_URL = "static/"
-STATICFILES_DIRS = [Path(BASE_DIR / "static"), Path(BASE_DIR / "dist")]
-
-MEDIA_URL = "media/"
-MEDIA_ROOT = "static/media"
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
@@ -210,3 +265,33 @@ SIMPLE_JWT = {
     "SLIDING_TOKEN_LIFETIME": timedelta(days=1),
     "SLIDING_TOKEN_REFRESH_LIFETIME": timedelta(days=2),
 }
+
+
+SWAGGER_SETTINGS = {
+    "USE_SESSION_AUTH": False,
+    "api_version": "1.0",
+    "enabled_methods": ["get", "post", "put", "patch", "delete"],
+    "SECURITY_DEFINITIONS": {
+        "Bearer": {
+            "type": "apiKey",
+            "name": "Authorization",
+            "in": "header",
+        },
+    },
+}
+
+
+CELERY_TIMEZONE = "Asia/Almaty"
+CELERY_TASK_TRACK_STARTED = True
+CELERY_TASK_TIME_LIMIT = 20 * 60
+CELERY_BROKER_URL = env("CELERY_BROKER_URL")
+
+EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+EMAIL_HOST = "smtp.mail.ru"
+EMAIL_PORT = 465
+EMAIL_HOST_USER = env("EMAIL_HOST_USER")
+EMAIL_HOST_PASSWORD = env("EMAIL_HOST_PASSWORD")
+EMAIL_USE_TLS = False
+EMAIL_USE_SSL = True
+SERVER_EMAIL = EMAIL_HOST_USER
+DEFAULT_FROM_EMAIL = EMAIL_HOST_USER

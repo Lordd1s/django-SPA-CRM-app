@@ -1,0 +1,41 @@
+@import url('https://fonts.googleapis.com/css2?family=Raleway&display=swap');
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Raleway', sans-serif;
+}
+
+body {
+    background: linear-gradient(90deg, rgba(0,0,0,1) 0%, rgba(70,70,70,1) 14%, rgba(252,252,252,0.57) 50%, rgba(15,15,15,0) 96%, rgba(0,0,0,0) 99%, rgba(173,123,123,0) 100%),
+		linear-gradient(90deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0) 7%, rgba(0,0,0,0) 98%, rgba(0,0,0,1) 100%),
+		linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,1) 0%, rgba(0,0,0,1) 100%),
+		radial-gradient(circle at 50% 50%, rgba(255,255,255,0) 0%, rgba(255,255,255,1) 1%, rgba(255,255,255,1) 100%);
+    background-size: cover;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+}
+
+.header-span {
+    background: linear-gradient(60deg, #c1e648, #864c86, #ffffff);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.login a {
+    text-decoration: none;
+    color: whitesmoke;
+    font-size: 1.3rem;
+    padding: 0 1rem 0 1rem; 
+    margin: 1rem;
+    text-align: center;
+    border-bottom: 1px solid white;
+    transition: background 0.3s ease-out;
+    cursor: pointer;
+}
+
+.login a:hover {
+    background: #00FFFF;
+    color: white;
+}
