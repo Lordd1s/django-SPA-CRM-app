@@ -34,7 +34,7 @@ def save_message_to_history(group_name, text_data):
     data = json.loads(text_data)
     # print(data)
     # print(group_name)
-    user = User.objects.get(username=data["user"])
+    user = User.objects.get(username=data["user"]["username"])
     room = models.Group.objects.get(slug=group_name)
     models.Message.objects.create(user=user, group=room, content=str(data["message"]))
 
@@ -49,7 +49,7 @@ class GroupChatConsumer(AsyncWebsocketConsumer):
         models.Message.objects.create(user=user, group=room, content=str(message))
 
     async def connect(self):
-        print(self.scope)
+        # print(self.scope)
         self.room_name = self.scope["url_route"]["kwargs"]["group_name"]
 
         self.room_group_name = f"chat_online_{self.room_name}"
@@ -76,9 +76,9 @@ class GroupChatConsumer(AsyncWebsocketConsumer):
 
     async def receive(self, text_data: bytes):
         data = json.loads(text_data)  # bytes(JSON) -> dict
-        # print(data)
+        # print("DATA:", data)
 
-        username = data["user"]
+        username = data["user"]["username"]
         room = data["grSlug"]
         message = data["message"]
 
