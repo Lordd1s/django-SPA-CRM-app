@@ -1,3 +1,3 @@
 cd ../
-call env/scripts/activate
+call env/Scripts/activate
 cmd
