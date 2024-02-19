@@ -27,12 +27,12 @@ class RequestLoggingMiddleware:
 
         # Логируем информацию о запросе
         logger.info(
-            f"Method: {request.method}, \n"
-            f"Path: {request.path}, \n"
-            f"Status Code: {response.status_code}, \n"
-            f"Time taken: {end_time - start_time:.2f}s\n"
-            f"IP: {request.META['REMOTE_ADDR']}\n"
-            f"when: {time.strftime('%Y-%m-%d %H:%M:%S')}\n\n"
+            f'\nMethod: {request.method}, \n'
+            f'Path: {request.path}, \n'
+            f'Status Code: {response.status_code}, \n'
+            f'Time taken: {end_time - start_time:.2f}s\n'
+            f'IP: {request.META["REMOTE_ADDR"]}\n'
+            f'When: {time.strftime("%Y-%m-%d %H:%M:%S")}\n\n'
         )
 
         return response
