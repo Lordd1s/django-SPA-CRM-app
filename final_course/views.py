@@ -1,6 +1,7 @@
 import datetime
 import json
 import logging
+import os
 import re
 
 import openpyxl
@@ -109,7 +110,7 @@ def register(request: Request) -> Response:
         if User.objects.filter(email=email).exists():
             return Response(
                 data={"error": "Пользователь с таким email уже существует."},
-                status=status.HTTP_400_BAD_REQUEST,
+                status=status.HTTP_406_NOT_ACCEPTABLE,
             )
 
         try:
@@ -126,7 +127,7 @@ def register(request: Request) -> Response:
         except ValueError as e:
             return Response(
                 data={"error": f"Неправильный email {email} или пароль {password}"},
-                status=status.HTTP_400_BAD_REQUEST,
+                status=status.HTTP_403_FORBIDDEN,
             )
 
 
@@ -314,8 +315,10 @@ def cv(request: Request, pk=None) -> Response:
             get_cv.is_viewed = True
             if request.data.get("is_accept"):
                 get_cv.is_accept = True
+                get_cv.is_declined = False
             if request.data.get("is_declined"):
                 get_cv.is_declined = True
+                get_cv.is_accept = False
             try:
                 get_cv.save()
                 return Response(
@@ -383,7 +386,6 @@ def vacancy(request: Request) -> Response:
 )
 @api_view(http_method_names=["GET"])
 @permission_classes([IsAuthenticated, permission.IsInGroupPermission])
-# @cache_page(30 * 60)
 def all_cv_boss(request: Request) -> Response:
     """
     Показывает все резюме только пользователям с правами в группе "Директор / Бухгалтерия".
@@ -396,8 +398,11 @@ def all_cv_boss(request: Request) -> Response:
     """
     try:
         serializer = serializers.CVSerializer(models.CV.objects.all(), many=True)
-        # print(serializer.data[0])
-        return Response(data=serializer.data, status=status.HTTP_200_OK)
+        print(len(serializer.data))
+        if len(serializer.data) > 0:
+            return Response(data=serializer.data, status=status.HTTP_200_OK)
+        else: 
+            return Response(data={"length": 0}, status=status.status_200_OK)
     except Exception as e:
         return Response(
             data={"message": str(e)},
@@ -412,7 +417,6 @@ def all_cv_boss(request: Request) -> Response:
 )
 @api_view(http_method_names=["GET"])
 @permission_classes([IsAuthenticated, permission.IsMaster])
-# @cache_page(30 * 60)
 def all_cv(request: Request) -> Response:
     """
     Показывает все резюме только у кого есть права (Группы - Начальники объекта, Мастера)!
@@ -428,7 +432,10 @@ def all_cv(request: Request) -> Response:
             models.CV.objects.all().order_by("rating"), many=True
         )
         # print(serializer.data[0]
-        return Response(data=serializer.data, status=status.HTTP_200_OK)
+        if len(serializer.data) > 0:
+            return Response(data=serializer.data, status=status.HTTP_200_OK)
+        else: 
+            return Response(data={"length": 0}, status=status.status_200_OK)
     except Exception as e:
         return Response(
             data={"message": str(e)},
@@ -862,30 +869,53 @@ def profile(request: Request) -> Response:
     elif request.method == "PATCH":
         form = request.data
         # print(form)
-
-        first_name = form.get("first_name")
-        last_name = form.get("last_name")
+        first_name = str(form.get("first_name")).strip()
+        last_name = str(form.get("last_name")).strip()
         was_born = form.get("was_born")
-        phone_number = form.get("phone_number")
+        phone_number = str(form.get("phone_number")).strip()
         avatar = form.get("avatar")
 
-        if (first_name and last_name and was_born and phone_number and avatar) is None:
+        if (
+            first_name == ""
+            and last_name == ""
+            and was_born is None
+            and phone_number == ""
+            and avatar == ""
+        ):
             return Response(
                 data={"message": "Заполните хотя бы одно поле"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
+
         else:
-            user.first_name = first_name
-            user.last_name = last_name
-            prof.was_born = was_born
-            prof.phone_number = phone_number
-            prof.avatar = avatar
             try:
+                if avatar:  # Если предоставлено новое изображение
+                    # Удалить старую фотографию
+
+                    if prof.avatar:
+                        # Проверить, существует ли файл, прежде чем удалять
+
+                        if os.path.isfile(prof.avatar.path):
+                            os.remove(prof.avatar.path)
+
+                    prof.avatar = avatar  # Обновить изображение
+
+                user.first_name = first_name
+
+                user.last_name = last_name
+
+                prof.was_born = was_born
+
+                prof.phone_number = phone_number
+
                 user.save()
+
                 prof.save()
+
                 return Response(
                     data=MESSAGE["message_updated"], status=status.HTTP_201_CREATED
                 )
+
             except Exception as e:
                 return Response(
                     data=str(e), status=status.HTTP_500_INTERNAL_SERVER_ERROR
