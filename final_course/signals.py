@@ -78,16 +78,25 @@ def cache_autorefresh_application_masters(sender, instance, **kwargs):
         cache.delete("application")
         cache.delete("applications")
         type_of = ""
+        is_accepted = ""
         match instance.type_of:
             case "X":
                 type_of += "Хлыст"
             case "B":
                 type_of += "Бухта"
         print("Кэш удален 'Заявка'")
+        match instance.is_accepted:
+            case "0":
+                is_accepted += "ОТКЛОНЕНО!"
+            case "1":
+                is_accepted += "ПРИНЯТО!"
+            case "2":
+                is_accepted += "НЕ РЕШЕНО!"
         message_text = f"""
             <b>Заявка от:</b> {instance._user.username}
             
-            
+<b>Статус:</b> {is_accepted}
+
 <b>Диаметр трубы:</b> {instance.diameter}
 
 <b>Толщина трубы:</b> {instance.thickness}
