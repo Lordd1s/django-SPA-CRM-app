@@ -8,10 +8,7 @@ from django.utils import timezone
 from final_course.models import CV
 
 
-@shared_task
-def summary(x, y):
-    return x + y
-
+# celery -A project_name worker -l info  cmd!
 
 @shared_task
 def send_cv():
