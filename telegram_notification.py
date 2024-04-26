@@ -5,7 +5,7 @@ import telebot.apihelper
 from telebot.async_telebot import AsyncTeleBot
 
 
-bot = AsyncTeleBot("6242141561:AAHwTfr7ADHUJiqtMnDT9bK85aw51qMeW9Y")
+bot = AsyncTeleBot()
 
 
 async def setup():
