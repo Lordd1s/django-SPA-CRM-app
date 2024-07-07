@@ -13,6 +13,6 @@ This project features a **Single Page Application (SPA)** developed with a robus
 
 ## Technologies Used
 - **Backend**: Django 4.2.0
-- **Frontend**: Vue3, Vite
+- **Frontend**: Vue3, Vite, Bootstrap
 - **Authentication**: JWT (JSON Web Tokens)
 - **Data Scraping**: Python, BeautifulSoup, requests
